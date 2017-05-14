@@ -21,9 +21,11 @@ style.use("dark_background")
 
 LARGE_FONT = ("Verdana", 12)
 
-f = Figure(figsize=(5, 5), dpi=100)
-graph = f.add_subplot(111)
-
+figure = Figure(figsize=(9, 5), dpi=75)
+graph = figure.add_subplot(111)
+stockData = []
+currentStock = ""
+boolStartRefreshingData = False
 
 def bytespdate2num(fmt, encoding='utf-8'):
     strconverter = mdates.strpdate2num(fmt)
@@ -35,13 +37,17 @@ def bytespdate2num(fmt, encoding='utf-8'):
     return bytesconverter
 
 
-def generateChart(stock):
+def generateChart():
     graph.clear()
-    stockPriceUrl = 'http://chartapi.finance.yahoo.com/instrument/1.0/' + stock + '/chartdata;type=quote;range=6m/csv'
+    stockData.clear()
+    graph.set_xlabel('DATE')
+    graph.set_ylabel('close price ($)')
+    graph.set_title(currentStock)
+
+    stockPriceUrl = 'http://chartapi.finance.yahoo.com/instrument/1.0/' + currentStock + '/chartdata;type=quote;range=6m/csv'
 
     sourceCode = urllib.request.urlopen(stockPriceUrl).read().decode()
 
-    stockData = []
     splitSource = sourceCode.split('\n')
 
     for line in splitSource:
@@ -52,8 +58,9 @@ def generateChart(stock):
 
     date, closePrice, highPrice, lowPrice, openPrice, volume = np.loadtxt(stockData, delimiter=',', unpack=True,
                                                                           converters={0: bytespdate2num('%Y%m%d')})
-    graph.plot_date(date, closePrice, '')
-
+    graph.plot_date(date, closePrice,'')
+    global boolStartRefreshingData
+    boolStartRefreshingData = False
 
 class StockAnalyser(tk.Tk):
     def __init__(self, *args, **kwargs):
@@ -85,7 +92,7 @@ class StockAnalyser(tk.Tk):
 class StartPage(tk.Frame):
     def __init__(self, parent, controller):
         tk.Frame.__init__(self, parent)
-        label = tk.Label(self, text="Pick graph stock exchange", font="LARGE_FONT")
+        label = tk.Label(self, text="write stock name(i.e TSLA,AAPL,NVDA)", font="LARGE_FONT")
         label.pack(pady=10, padx=10)
 
         stockEntry = tk.Entry(self)
@@ -96,28 +103,32 @@ class StartPage(tk.Frame):
         button.pack()
 
         def prepChart():
-            generateChart(stockEntry.get())
+            global currentStock
+            currentStock = stockEntry.get()
+            global boolStartRefreshingData
+            boolStartRefreshingData = True
             controller.show_frame(StartPage2)
 
 
 class StartPage2(tk.Frame):
     def __init__(self, parent, controller):
         tk.Frame.__init__(self, parent)
-        label = tk.Label(self, text="Graph page", font="LARGE_FONT")
-        label.pack(pady=10, padx=10)
 
         button = tk.Button(self, text="back to home page",
                            command=lambda: controller.show_frame(StartPage))
         button.pack()
 
-        canvas = FigureCanvasTkAgg(f, self)
+        canvas = FigureCanvasTkAgg(figure, self)
         canvas.show()
 
         toolbar = NavigationToolbar2TkAgg(canvas, self)
         canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=True)
         canvas._tkcanvas.pack(side=tk.BOTTOM, fill=tk.BOTH, expand=True)
         toolbar.update()
-
+def animate(self):
+    if boolStartRefreshingData==True:
+        generateChart()
 
 app = StockAnalyser()
+ani = animation.FuncAnimation(figure,animate,100)
 app.mainloop()
