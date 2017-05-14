@@ -4,38 +4,56 @@ matplotlib.use("TkAgg")
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2TkAgg
 from matplotlib.figure import Figure
 import matplotlib.animation as animation
+import matplotlib.pyplot as plt
 from matplotlib import style
+import matplotlib.dates as mdates
 
 import tkinter as tk
 from tkinter import *
 
+import urllib
+import json
+
+import pandas as pd
+import numpy as np
+
 style.use("dark_background")
 
-
 LARGE_FONT = ("Verdana", 12)
-NASDAQ = ["TSLA.US", "AAPL.US", "AMD.US", "NVDA.US"];
-NYSEEuronextUS = ""
-JapanExchangeGroup = ""
-stockMarkets = {'NASDAQ OMX': NASDAQ,
-                'NYSE Euronext(US)': NYSEEuronextUS,
-                'Japan Exchange Group': JapanExchangeGroup}
 
 f = Figure(figsize=(5, 5), dpi=100)
-a = f.add_subplot(111)
+graph = f.add_subplot(111)
 
-def animate(i):
-    pullData = open("sampleStockData.txt","r").read()
-    dataList = pullData.split('\n')
-    xList = []
-    yList = []
-    for eachLine in dataList:
-        if len(eachLine)>1:
-            x,y = eachLine.split(',')
-            xList.append(int(x))
-            yList.append(int(y))
 
-    a.clear()
-    a.plot(xList,yList)
+def bytespdate2num(fmt, encoding='utf-8'):
+    strconverter = mdates.strpdate2num(fmt)
+
+    def bytesconverter(b):
+        s = b.decode(encoding)
+        return strconverter(s)
+
+    return bytesconverter
+
+
+def generateChart(stock):
+    graph.clear()
+    stockPriceUrl = 'http://chartapi.finance.yahoo.com/instrument/1.0/' + stock + '/chartdata;type=quote;range=6m/csv'
+
+    sourceCode = urllib.request.urlopen(stockPriceUrl).read().decode()
+
+    stockData = []
+    splitSource = sourceCode.split('\n')
+
+    for line in splitSource:
+        splitLine = line.split(',')
+        if len(splitLine) == 6:
+            if 'values' not in line and 'labels' not in line:
+                stockData.append(line)
+
+    date, closePrice, highPrice, lowPrice, openPrice, volume = np.loadtxt(stockData, delimiter=',', unpack=True,
+                                                                          converters={0: bytespdate2num('%Y%m%d')})
+    graph.plot_date(date, closePrice, '')
+
 
 class StockAnalyser(tk.Tk):
     def __init__(self, *args, **kwargs):
@@ -63,44 +81,43 @@ class StockAnalyser(tk.Tk):
         frame = self.frames[cont]
         frame.tkraise()
 
+
 class StartPage(tk.Frame):
     def __init__(self, parent, controller):
         tk.Frame.__init__(self, parent)
-        label = tk.Label(self, text="Pick a stock exchange", font="LARGE_FONT")
+        label = tk.Label(self, text="Pick graph stock exchange", font="LARGE_FONT")
         label.pack(pady=10, padx=10)
 
-        global stockExchangeList;
-        stockExchangeList = tk.Listbox(self, height=5)
-        stockExchangeList.pack()
-        for item in stockMarkets:
-            stockExchangeList.insert(END, item)
-        button1 = tk.Button(self, text="next",
-                            command=lambda: controller.show_frame(StartPage2))
-        button1.pack()
+        stockEntry = tk.Entry(self)
+        stockEntry.pack()
+
+        button = tk.Button(self, text="next",
+                           command=lambda: prepChart())
+        button.pack()
+
+        def prepChart():
+            generateChart(stockEntry.get())
+            controller.show_frame(StartPage2)
 
 
 class StartPage2(tk.Frame):
-    shares = NONE
-
     def __init__(self, parent, controller):
         tk.Frame.__init__(self, parent)
         label = tk.Label(self, text="Graph page", font="LARGE_FONT")
         label.pack(pady=10, padx=10)
 
-        button1 = tk.Button(self, text="back to home page",
-                            command=lambda: controller.show_frame(StartPage))
-        button1.pack()
+        button = tk.Button(self, text="back to home page",
+                           command=lambda: controller.show_frame(StartPage))
+        button.pack()
 
         canvas = FigureCanvasTkAgg(f, self)
         canvas.show()
 
-        toolbar = NavigationToolbar2TkAgg(canvas,self)
+        toolbar = NavigationToolbar2TkAgg(canvas, self)
         canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=True)
         canvas._tkcanvas.pack(side=tk.BOTTOM, fill=tk.BOTH, expand=True)
         toolbar.update()
 
 
-
 app = StockAnalyser()
-ani = animation.FuncAnimation(f, animate, interval=1000)
 app.mainloop()
