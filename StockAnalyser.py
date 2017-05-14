@@ -22,10 +22,11 @@ style.use("dark_background")
 
 LARGE_FONT = ("Verdana", 12)
 
-figure = Figure(figsize=(9, 5), dpi=75)
+figure = Figure(figsize=(15, 6), dpi=75)
 graph = figure.add_subplot(111)
 stockData = []
 currentStock = ""
+currentGraphOption = "close price"
 boolStartRefreshingData = False
 timeRange = 12
 
@@ -43,9 +44,12 @@ def bytespdate2num(fmt, encoding='utf-8'):
 def generateChart():
     graph.clear()
     stockData.clear()
-    graph.set_xlabel('DATE')
-    graph.set_ylabel('close price ($)')
     graph.set_title(currentStock)
+    graph.set_xlabel('DATE')
+    graph.set_ylabel(currentGraphOption + "  $")
+    if currentGraphOption == "volume":
+        graph.set_ylabel(currentGraphOption)
+
     try:
         stockPriceUrl = 'http://chartapi.finance.yahoo.com/instrument/1.0/' + currentStock + '/chartdata;type=quote;range=' + timeRange + 'm/csv'
 
@@ -61,11 +65,19 @@ def generateChart():
 
         date, closePrice, highPrice, lowPrice, openPrice, volume = np.loadtxt(stockData, delimiter=',', unpack=True,
                                                                               converters={0: bytespdate2num('%Y%m%d')})
-        graph.plot_date(date, closePrice, '')
-    except :
-        warr = messagebox.showwarning("BE CAREFUL, COWBOY!", "There is no such stock or wrong time range")
+        if currentGraphOption == "close price":
+            graph.plot_date(date, closePrice, '')
+        elif currentGraphOption == "high price":
+            graph.plot_date(date, highPrice, '')
+        elif currentGraphOption == "open price":
+            graph.plot_date(date, openPrice, '')
+        elif currentGraphOption == "low price":
+            graph.plot_date(date, lowPrice, '')
+        elif currentGraphOption == "volume":
+            graph.plot_date(date, volume, '')
 
-
+    except:
+        messagebox.showwarning("BE CAREFUL, COWBOY!", "There is no such stock or wrong time range")
 
     global boolStartRefreshingData
     boolStartRefreshingData = False
@@ -102,25 +114,33 @@ class StartPage(tk.Frame):
     def __init__(self, parent, controller):
         tk.Frame.__init__(self, parent)
         label = tk.Label(self, text="write stock name(i.e TSLA,AAPL,NVDA)", font="LARGE_FONT")
-        label.pack(pady=10, padx=10)
+        label.pack(pady=20, padx=20)
 
         stockEntry = tk.Entry(self)
         stockEntry.insert(END, 'PKO')
         stockEntry.pack()
 
         label2 = tk.Label(self, text="write time range in months", font="LARGE_FONT")
-        label2.pack(pady=10, padx=10)
+        label2.pack(pady=20, padx=20)
 
         timerangeEntry = tk.Entry(self)
         timerangeEntry.insert(END, '12')
         timerangeEntry.pack()
 
+        choices = ['close price', 'high price', 'low price', 'open price', 'volume']
+        variable = tk.StringVar()
+        variable.set('close price')
+
+        w = OptionMenu(self, variable, *choices)
+        w.pack(pady=20, padx=20)
+
         button = tk.Button(self, text="next",
                            command=lambda: prepChart())
-        button.pack()
+        button.pack(pady=20, padx=20)
 
         def prepChart():
-            global currentStock, timeRange, boolStartRefreshingData
+            global currentStock, timeRange, boolStartRefreshingData, currentGraphOption
+            currentGraphOption = variable.get()
             timeRange = timerangeEntry.get()
             currentStock = stockEntry.get()
             boolStartRefreshingData = True
