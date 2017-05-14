@@ -4,7 +4,6 @@ matplotlib.use("TkAgg")
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2TkAgg
 from matplotlib.figure import Figure
 import matplotlib.animation as animation
-import matplotlib.pyplot as plt
 from matplotlib import style
 import matplotlib.dates as mdates
 
@@ -13,9 +12,7 @@ from tkinter import *
 from tkinter import messagebox
 
 import urllib
-import json
 
-import pandas as pd
 import numpy as np
 
 style.use("dark_background")
@@ -25,10 +22,10 @@ LARGE_FONT = ("Verdana", 12)
 figure = Figure(figsize=(15, 6), dpi=75)
 graph = figure.add_subplot(111)
 stockData = []
-currentStock = ""
-currentGraphOption = "close price"
+currentStock = None
+currentGraphOption = None
 boolStartRefreshingData = False
-timeRange = 12
+timeRange = None
 
 
 def bytespdate2num(fmt, encoding='utf-8'):
