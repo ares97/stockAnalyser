@@ -10,6 +10,7 @@ import matplotlib.dates as mdates
 
 import tkinter as tk
 from tkinter import *
+from tkinter import messagebox
 
 import urllib
 import json
@@ -26,6 +27,8 @@ graph = figure.add_subplot(111)
 stockData = []
 currentStock = ""
 boolStartRefreshingData = False
+timeRange = 12
+
 
 def bytespdate2num(fmt, encoding='utf-8'):
     strconverter = mdates.strpdate2num(fmt)
@@ -43,24 +46,30 @@ def generateChart():
     graph.set_xlabel('DATE')
     graph.set_ylabel('close price ($)')
     graph.set_title(currentStock)
+    try:
+        stockPriceUrl = 'http://chartapi.finance.yahoo.com/instrument/1.0/' + currentStock + '/chartdata;type=quote;range=' + timeRange + 'm/csv'
 
-    stockPriceUrl = 'http://chartapi.finance.yahoo.com/instrument/1.0/' + currentStock + '/chartdata;type=quote;range=6m/csv'
+        sourceCode = urllib.request.urlopen(stockPriceUrl).read().decode()
 
-    sourceCode = urllib.request.urlopen(stockPriceUrl).read().decode()
+        splitSource = sourceCode.split('\n')
 
-    splitSource = sourceCode.split('\n')
+        for line in splitSource:
+            splitLine = line.split(',')
+            if len(splitLine) == 6:
+                if 'values' not in line and 'labels' not in line:
+                    stockData.append(line)
 
-    for line in splitSource:
-        splitLine = line.split(',')
-        if len(splitLine) == 6:
-            if 'values' not in line and 'labels' not in line:
-                stockData.append(line)
+        date, closePrice, highPrice, lowPrice, openPrice, volume = np.loadtxt(stockData, delimiter=',', unpack=True,
+                                                                              converters={0: bytespdate2num('%Y%m%d')})
+        graph.plot_date(date, closePrice, '')
+    except :
+        warr = messagebox.showwarning("BE CAREFUL, COWBOY!", "There is no such stock or wrong time range")
 
-    date, closePrice, highPrice, lowPrice, openPrice, volume = np.loadtxt(stockData, delimiter=',', unpack=True,
-                                                                          converters={0: bytespdate2num('%Y%m%d')})
-    graph.plot_date(date, closePrice,'')
+
+
     global boolStartRefreshingData
     boolStartRefreshingData = False
+
 
 class StockAnalyser(tk.Tk):
     def __init__(self, *args, **kwargs):
@@ -96,16 +105,24 @@ class StartPage(tk.Frame):
         label.pack(pady=10, padx=10)
 
         stockEntry = tk.Entry(self)
+        stockEntry.insert(END, 'PKO')
         stockEntry.pack()
+
+        label2 = tk.Label(self, text="write time range in months", font="LARGE_FONT")
+        label2.pack(pady=10, padx=10)
+
+        timerangeEntry = tk.Entry(self)
+        timerangeEntry.insert(END, '12')
+        timerangeEntry.pack()
 
         button = tk.Button(self, text="next",
                            command=lambda: prepChart())
         button.pack()
 
         def prepChart():
-            global currentStock
+            global currentStock, timeRange, boolStartRefreshingData
+            timeRange = timerangeEntry.get()
             currentStock = stockEntry.get()
-            global boolStartRefreshingData
             boolStartRefreshingData = True
             controller.show_frame(StartPage2)
 
@@ -125,10 +142,13 @@ class StartPage2(tk.Frame):
         canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=True)
         canvas._tkcanvas.pack(side=tk.BOTTOM, fill=tk.BOTH, expand=True)
         toolbar.update()
+
+
 def animate(self):
-    if boolStartRefreshingData==True:
+    if boolStartRefreshingData == True:
         generateChart()
 
+
 app = StockAnalyser()
-ani = animation.FuncAnimation(figure,animate,1)
+ani = animation.FuncAnimation(figure, animate, 1)
 app.mainloop()
