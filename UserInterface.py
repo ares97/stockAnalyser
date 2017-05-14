@@ -114,7 +114,7 @@ class StartPage2(tk.Frame):
     def __init__(self, parent, controller):
         tk.Frame.__init__(self, parent)
 
-        button = tk.Button(self, text="back to home page",
+        button = tk.Button(self, text="back to choosing page",
                            command=lambda: controller.show_frame(StartPage))
         button.pack()
 
@@ -130,5 +130,5 @@ def animate(self):
         generateChart()
 
 app = StockAnalyser()
-ani = animation.FuncAnimation(figure,animate,100)
+ani = animation.FuncAnimation(figure,animate,1)
 app.mainloop()
