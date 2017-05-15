@@ -63,16 +63,20 @@ def generateChart():
         date, closePrice, highPrice, lowPrice, openPrice, volume = np.loadtxt(stockData, delimiter=',', unpack=True,
                                                                               converters={0: bytespdate2num('%Y%m%d')})
         if currentGraphOption == "close price":
-            graph.plot_date(date, closePrice, '')
+            graph.plot_date(date, closePrice, ':', label=' CLOSE PRICE ')
         elif currentGraphOption == "high price":
-            graph.plot_date(date, highPrice, '')
+            graph.plot_date(date, highPrice, '', label=' HIGH PRICE ')
+            graph.plot_date(date, closePrice, ':', label=' CLOSE PRICE ')
         elif currentGraphOption == "open price":
-            graph.plot_date(date, openPrice, '')
+            graph.plot_date(date, openPrice, '', label=' OPEN PRICE ')
+            graph.plot_date(date, closePrice, ':', label=' CLOSE PRICE ')
         elif currentGraphOption == "low price":
-            graph.plot_date(date, lowPrice, '')
+            graph.plot_date(date, lowPrice, '', label=' LOW PRICE ')
+            graph.plot_date(date, closePrice, ':', label=' CLOSE PRICE ')
         elif currentGraphOption == "volume":
-            graph.plot_date(date, volume, '')
+            graph.plot_date(date, volume, '', label=' VOLUME ')
 
+        graph.legend()
     except:
         messagebox.showwarning("BE CAREFUL, COWBOY!", "There is no such stock or wrong time range")
 
