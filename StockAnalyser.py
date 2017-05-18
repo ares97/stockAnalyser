@@ -78,7 +78,7 @@ def generateChart():
 
         graph.legend()
     except:
-        messagebox.showwarning("BE CAREFUL, COWBOY!", "There is no such stock or wrong time range")
+        messagebox.showwarning("BE CAREFUL, COWBOY!", "There is no such stock or wrong time range. If you are certain you're right then it's again yahoo falut :( be patient")
 
     global boolStartRefreshingData
     boolStartRefreshingData = False
